@@ -43,6 +43,7 @@ Status legend: ✅ working, ⚠ requires Advanced Access via Meta App Review, �
 - ✅ `publish_image` — single image post
 - ✅ `publish_video` — single feed video
 - ✅ `publish_reel` — Reels (vertical short video), incl. `share_to_feed` and **Trial Reels** (`trial=True`)
+- ✅ `publish_story` — Stories (image or video, 24 h), incl. `user_tags`
 - ✅ `publish_carousel` — 2–10 image/video carousel
 - ✅ `get_content_publishing_limit` — remaining posts in 24h window
 

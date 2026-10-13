@@ -266,6 +266,44 @@ async def publish_reel(
 
 
 @mcp.tool()
+async def publish_story(
+    image_url: str | None = None,
+    video_url: str | None = None,
+    user_tags: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Publish a Story (visible for 24 hours). Pass exactly one of image_url or video_url.
+
+    Args:
+        image_url: Publicly accessible HTTPS URL to a JPEG image (9:16 recommended).
+        video_url: Publicly accessible HTTPS URL to an MP4 video (9:16, max 60 s).
+        user_tags: People to tag, as [{"username": str, "x": float, "y": float}]
+            for images or [{"username": str}] for videos.
+
+    Stories take no caption, location, collaborators or alt text; stickers, links
+    and music are not available through the API.
+    """
+    try:
+        if bool(image_url) == bool(video_url):
+            return {"ok": False, "error": {"message": "Pass exactly one of image_url or video_url"}}
+        client = get_client()
+        params: dict[str, Any] = {"media_type": "STORIES"}
+        if image_url:
+            params["image_url"] = image_url
+        else:
+            params["video_url"] = video_url
+        _add_common_params(params, user_tags=user_tags)
+        container = await client.post("me/media", params=params)
+        cid = container.get("id")
+        if not cid:
+            return {"ok": False, "error": {"message": "No container id returned", "data": container}}
+        await _wait_for_container(cid)
+        published = await _publish_container(cid)
+        return {"ok": True, "media_id": published.get("id"), "container_id": cid}
+    except Exception as e:
+        return format_error(e)
+
+
+@mcp.tool()
 async def publish_carousel(
     items: list[dict[str, Any]],
     caption: str | None = None,

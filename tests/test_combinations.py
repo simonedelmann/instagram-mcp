@@ -219,3 +219,32 @@ async def test_get_hashtag_media_edge_selection(env, mtype, edge):
     route = respx.get(f"{FB}/h1/{edge}").mock(return_value=_resp({"data": []}))
     res = await hashtags.get_hashtag_media("h1", media_type=mtype)
     assert res["ok"] is True and route.called
+
+
+# ---------- publish_story: image vs video, validation ----------
+
+@respx.mock
+async def test_story_image(env):
+    create = _setup_single_publish()
+    res = await publish.publish_story(image_url="https://x/s.jpg")
+    q = create.calls.last.request.url.params
+    assert res["ok"] is True and res["media_id"] == "M"
+    assert q["media_type"] == "STORIES"
+    assert q["image_url"] == "https://x/s.jpg"
+    assert "video_url" not in q and "caption" not in q
+
+
+@respx.mock
+async def test_story_video_with_tags(env):
+    create = _setup_single_publish()
+    await publish.publish_story(video_url="https://x/s.mp4", user_tags=[{"username": "a"}])
+    q = create.calls.last.request.url.params
+    assert q["media_type"] == "STORIES"
+    assert q["video_url"] == "https://x/s.mp4"
+    assert json.loads(q["user_tags"]) == [{"username": "a"}]
+
+
+@pytest.mark.parametrize("kwargs", [{}, {"image_url": "https://x/s.jpg", "video_url": "https://x/s.mp4"}])
+async def test_story_requires_exactly_one_media(env, kwargs):
+    res = await publish.publish_story(**kwargs)
+    assert res["ok"] is False
